@@ -1,55 +1,49 @@
 ﻿using KanbanTracker.Domain.Enums;
 using KanbanTracker.Domain.Models;
-using KanbanTracker.Domain.Patterns.State;
-using KanbanTracker.Domain.Patterns.Factory;
-using KanbanTracker.Domain.Patterns.Composite;
+using KanbanTracker.Domain.Services;
 
-// ── Патерн State ────────────────────────────────────────
-Console.WriteLine("=== Патерн State ===");
-var stateManager = new TaskStateManager();
+// ── Збираємо дошку ──────────────────────────────────────
+var board = new Board("Мій проєкт");
 
-var task1 = new TaskItem("Написати тести", Priority.High);
-Console.WriteLine($"Початковий стан: {stateManager.GetStateName(task1)}");
-stateManager.MoveNext(task1);  // Todo → InProgress
-stateManager.MoveNext(task1);  // InProgress → Review
-stateManager.MoveNext(task1);  // Review → Done
-stateManager.MoveNext(task1);  // Done → вже кінець
-stateManager.MovePrev(task1);  // Done → Review
+var todo       = new Column("Todo");
+var inProgress = new Column("In Progress");
+var done       = new Column("Done");
 
-// ── Патерн Factory ──────────────────────────────────────
-Console.WriteLine("\n=== Патерн Factory ===");
+board.AddColumn(todo);
+board.AddColumn(inProgress);
+board.AddColumn(done);
 
-ITaskFactory regularFactory = new RegularTaskFactory(Priority.Medium);
-ITaskFactory bugFactory = new BugReportFactory(
-    "Дані зберігаються",
-    "Дані губляться після перезапуску"
-);
+var david = new User("Давид", "david@example.com");
+var anna  = new User("Анна", "anna@example.com");
+board.AddMember(david);
+board.AddMember(anna);
 
-var task2 = regularFactory.Create("Додати пагінацію", "Розбити список на сторінки");
-var task3 = regularFactory.Create("Рефакторинг сервісу", "Прибрати дублювання коду");
-var bug1  = bugFactory.Create("Дані не зберігаються", "Кроки: запустити → закрити → відкрити");
+var task1 = new TaskItem("Зробити UML-діаграму", "Намалювати діаграму класів", Priority.High);
+var task2 = new TaskItem("Написати класи", Priority.Medium);
+var bug1  = new BugReport("Краш при збереженні", "Зберегти → закрити", "Дані є", "Дані губляться");
 
-Console.WriteLine($"Створено: {task2}");
-Console.WriteLine($"Створено: {task3}");
-Console.WriteLine($"Створено: {bug1}");
+task1.Assign(david);
+task2.Assign(anna);
 
-// ── Патерн Composite ────────────────────────────────────
-Console.WriteLine("\n=== Патерн Composite ===");
+todo.AddTask(task2);
+todo.AddTask(bug1);
+inProgress.AddTask(task1);
+task1.MoveToStatus(KanbanStatus.InProgress);
 
-var epic = new TaskComposite("Епік: Авторизація");
+// ── Серіалізація ────────────────────────────────────────
+Console.WriteLine("=== Серіалізація у JSON ===");
+var boardService = new BoardService();
+boardService.SaveToFile(board, "board.json");
 
-var feature1 = new TaskComposite("Фіча: Логін");
-feature1.Add(new TaskLeaf(new TaskItem("Форма логіну", Priority.High)));
-feature1.Add(new TaskLeaf(new TaskItem("Валідація полів", Priority.Medium)));
-feature1.Add(new TaskLeaf(new TaskItem("JWT токен", Priority.High)));
-
-var feature2 = new TaskComposite("Фіча: Реєстрація");
-feature2.Add(new TaskLeaf(new TaskItem("Форма реєстрації", Priority.Medium)));
-feature2.Add(new TaskLeaf(new TaskItem("Відправка email", Priority.Low)));
-
-epic.Add(feature1);
-epic.Add(feature2);
-epic.Add(new TaskLeaf(bug1));
-
-epic.Display();
-Console.WriteLine($"\nВсього завдань в епіку: {epic.GetTotalCount()}");
+Console.WriteLine("\n=== Десеріалізація з JSON ===");
+var loaded = boardService.LoadFromFile("board.json");
+if (loaded != null)
+{
+    Console.WriteLine($"Завантажено дошку: {loaded.Name}");
+    foreach (var col in loaded.Columns)
+    {
+        Console.WriteLine($"  Колонка: {col.Name} ({col.Tasks.Count} завдань)");
+        foreach (var t in col.Tasks)
+            Console.WriteLine($"    - [{t.Priority}] {t.Title} | {t.Status} | Виконавець: {t.AssigneeName ?? "—"}");
+    }
+}
