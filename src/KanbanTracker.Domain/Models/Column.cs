@@ -40,5 +40,8 @@ public class Column : BaseEntity
     public List<TaskItem> GetByStatus(KanbanStatus status)
         => _tasks.Where(t => t.MatchesFilter(status)).ToList();
 
+    public override string GetSummary() =>
+        $"Колонка: {Name} | Завдань: {_tasks.Count}";
+
     public override string ToString() => $"Колонка: {Name} ({_tasks.Count} завдань)";
 }

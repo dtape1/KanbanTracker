@@ -70,5 +70,8 @@ public class TaskItem : BaseEntity, IAssignable, IFilterable
 
     public bool MatchesFilter(KanbanStatus status) => Status == status;
 
+    public override string GetSummary() =>
+        $"Завдання: {Title} | Пріоритет: {Priority} | Статус: {Status} | Виконавець: {Assignee?.Name ?? "—"}";
+
     public override string ToString() => $"[{Priority}] {Title} — {Status}";
 }

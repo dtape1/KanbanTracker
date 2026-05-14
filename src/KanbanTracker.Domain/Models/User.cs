@@ -35,5 +35,7 @@ public class User : BaseEntity
         Email = email;
     }
 
+    public override string GetSummary() => $"Користувач: {Name} ({Email})";
+
     public override string ToString() => $"{Name} ({Email})";
 }

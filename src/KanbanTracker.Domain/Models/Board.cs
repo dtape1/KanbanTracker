@@ -52,5 +52,8 @@ public class Board : BaseEntity
         to.AddTask(task);
     }
 
+    public override string GetSummary() =>
+        $"Дошка: {Name} | Колонок: {_columns.Count} | Учасників: {_members.Count}";
+
     public override string ToString() => $"Дошка: {Name} ({_columns.Count} колонок)";
 }

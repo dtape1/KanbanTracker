@@ -36,5 +36,8 @@ public class Epic : BaseEntity
         _tasks.Remove(task);
     }
 
+    public override string GetSummary() =>
+        $"Епік: {Title} | Завдань: {_tasks.Count}";
+
     public override string ToString() => $"Епік: {Title} ({_tasks.Count} завдань)";
 }

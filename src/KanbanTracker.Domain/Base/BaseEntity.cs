@@ -11,6 +11,8 @@ public abstract class BaseEntity
         CreatedAt = DateTime.Now;
     }
 
+    public abstract string GetSummary();
+
     public override string ToString() => $"[{GetType().Name}] Id={Id}";
 
     public override bool Equals(object? obj)
