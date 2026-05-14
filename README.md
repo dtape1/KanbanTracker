@@ -46,6 +46,8 @@ classDiagram
         +Name : string
         +Email : string
         +User(name, email)
+        +operator==(a, b) bool
+        +operator!=(a, b) bool
         +GetSummary() string
     }
 
@@ -75,8 +77,9 @@ classDiagram
         +StepsToReproduce : string
         +ExpectedBehavior : string
         +ActualBehavior : string
-        +BugReport(title, steps, expected, actual)
+        +BugReport(title, steps, exp, act)
         +GetSummary() string
+        +ToString() string
     }
 
     class Column {
@@ -116,20 +119,189 @@ classDiagram
         +GetSummary() string
     }
 
+    class Repository~T~ {
+        -_items : List~T~
+        +Add(item) void
+        +Remove(item) void
+        +GetById(id) T
+        +GetAll() IReadOnlyList
+        +Find(predicate) IReadOnlyList
+        +Count : int
+    }
+
+    class TaskService {
+        -_tasks : List~TaskItem~
+        +OnStatusChanged : event
+        +AddTask(task) void
+        +ChangeStatus(task, status) void
+        +GetByStatus(status) IEnumerable
+        +GetByPriority(priority) IEnumerable
+        +GetByAssignee(user) IEnumerable
+        +GetSortedByPriority() IEnumerable
+        +GetStatusStats() Dictionary
+        +Filter(filter) IEnumerable
+    }
+
+    class ITaskState {
+        <<interface>>
+        +StateName : string
+        +MoveNext(task) void
+        +MovePrev(task) void
+    }
+
+    class TodoState {
+        +StateName : string
+        +MoveNext(task) void
+        +MovePrev(task) void
+    }
+
+    class InProgressState {
+        +StateName : string
+        +MoveNext(task) void
+        +MovePrev(task) void
+    }
+
+    class ReviewState {
+        +StateName : string
+        +MoveNext(task) void
+        +MovePrev(task) void
+    }
+
+    class DoneState {
+        +StateName : string
+        +MoveNext(task) void
+        +MovePrev(task) void
+    }
+
+    class TaskStateManager {
+        -_states : Dictionary
+        +MoveNext(task) void
+        +MovePrev(task) void
+        +GetStateName(task) string
+    }
+
+    class ITaskFactory {
+        <<interface>>
+        +Create(title, desc) TaskItem
+    }
+
+    class RegularTaskFactory {
+        -_priority : Priority
+        +RegularTaskFactory(priority)
+        +Create(title, desc) TaskItem
+    }
+
+    class BugReportFactory {
+        -_expected : string
+        -_actual : string
+        +BugReportFactory(exp, act)
+        +Create(title, desc) TaskItem
+    }
+
+    class ITaskComponent {
+        <<interface>>
+        +Title : string
+        +Display(depth) void
+        +GetTotalCount() int
+    }
+
+    class TaskLeaf {
+        -_task : TaskItem
+        +Title : string
+        +Display(depth) void
+        +GetTotalCount() int
+    }
+
+    class TaskComposite {
+        -_children : List~ITaskComponent~
+        +Title : string
+        +Add(component) void
+        +Display(depth) void
+        +GetTotalCount() int
+    }
+
+    class TaskDecorator {
+        <<abstract>>
+        #_wrapped : TaskItem
+        +TaskDecorator(task)
+    }
+
+    class UrgentTaskDecorator {
+        +Deadline : DateTime
+        +UrgentTaskDecorator(task, deadline)
+        +GetSummary() string
+        +ToString() string
+    }
+
+    class TaggedTaskDecorator {
+        -_tags : List~string~
+        +Tags : IReadOnlyList
+        +TaggedTaskDecorator(task, tags)
+        +GetSummary() string
+        +ToString() string
+    }
+
+    class DomainException {
+        +DomainException(message)
+    }
+
+    class TaskNotFoundException {
+        +TaskId : Guid
+        +TaskNotFoundException(id)
+    }
+
+    class InvalidStatusTransitionException {
+        +InvalidStatusTransitionException(from, to)
+    }
+
+    class UserAlreadyAssignedException {
+        +UserAlreadyAssignedException(userName)
+    }
+
+    %% Наслідування від BaseEntity
     BaseEntity <|-- User
     BaseEntity <|-- TaskItem
     BaseEntity <|-- Column
     BaseEntity <|-- Epic
     BaseEntity <|-- Board
-    TaskItem <|-- BugReport
 
+    %% Наслідування TaskItem
+    TaskItem <|-- BugReport
+    TaskItem <|-- TaskDecorator
+
+    %% Декоратори
+    TaskDecorator <|-- UrgentTaskDecorator
+    TaskDecorator <|-- TaggedTaskDecorator
+
+    %% Інтерфейси
     IAssignable <|.. TaskItem
     IFilterable <|.. TaskItem
+    ITaskState <|.. TodoState
+    ITaskState <|.. InProgressState
+    ITaskState <|.. ReviewState
+    ITaskState <|.. DoneState
+    ITaskFactory <|.. RegularTaskFactory
+    ITaskFactory <|.. BugReportFactory
+    ITaskComponent <|.. TaskLeaf
+    ITaskComponent <|.. TaskComposite
 
+    %% Агрегація
     Board "1" o-- "0..*" Column
     Board "1" o-- "0..*" User
     Column "1" o-- "0..*" TaskItem
     Epic "1" o-- "0..*" TaskItem
     TaskItem "1" o-- "0..*" TaskItem : subtasks
+    TaskComposite "1" o-- "0..*" ITaskComponent
+    TaskStateManager "1" o-- "4" ITaskState
+
+    %% Асоціації
     TaskItem "0..1" --> "0..1" User : assignee
+    TaskLeaf --> TaskItem
+    TaskService --> TaskItem
+    Repository~T~ --> BaseEntity
+
+    %% Винятки
+    DomainException <|-- TaskNotFoundException
+    DomainException <|-- InvalidStatusTransitionException
+    DomainException <|-- UserAlreadyAssignedException
 ```
