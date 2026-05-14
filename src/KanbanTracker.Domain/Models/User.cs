@@ -35,6 +35,21 @@ public class User : BaseEntity
         Email = email;
     }
 
+    // Перевантаження операторів
+    public static bool operator ==(User? a, User? b)
+    {
+        if (a is null && b is null) return true;
+        if (a is null || b is null) return false;
+        return a.Id == b.Id;
+    }
+
+    public static bool operator !=(User? a, User? b) => !(a == b);
+
+    public override bool Equals(object? obj) =>
+        obj is User other && Id == other.Id;
+
+    public override int GetHashCode() => Id.GetHashCode();
+
     public override string GetSummary() => $"Користувач: {Name} ({Email})";
 
     public override string ToString() => $"{Name} ({Email})";

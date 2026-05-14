@@ -1,5 +1,6 @@
 using KanbanTracker.Domain.Base;
 using KanbanTracker.Domain.Enums;
+using KanbanTracker.Domain.Exceptions;
 using KanbanTracker.Domain.Interfaces;
 
 namespace KanbanTracker.Domain.Models;
@@ -16,7 +17,7 @@ public class TaskItem : BaseEntity, IAssignable, IFilterable
         private set
         {
             if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Назва завдання не може бути порожньою.");
+                throw new DomainException("Назва завдання не може бути порожньою.");
             _title = value;
         }
     }
@@ -48,23 +49,21 @@ public class TaskItem : BaseEntity, IAssignable, IFilterable
 
     public void Assign(User user)
     {
-        Assignee = user ?? throw new ArgumentNullException(nameof(user));
+        if (user == null) throw new ArgumentNullException(nameof(user));
+        if (Assignee != null && Assignee.Id == user.Id)
+            throw new UserAlreadyAssignedException(user.Name);
+        Assignee = user;
     }
 
-    public void Unassign()
-    {
-        Assignee = null;
-    }
+    public void Unassign() => Assignee = null;
 
-    public void MoveToStatus(KanbanStatus newStatus)
-    {
-        Status = newStatus;
-    }
+    public void MoveToStatus(KanbanStatus newStatus) => Status = newStatus;
 
     public void AddSubtask(TaskItem task)
     {
         if (task == null) throw new ArgumentNullException(nameof(task));
-        if (task.Id == Id) throw new InvalidOperationException("Завдання не може бути підзадачею самого себе.");
+        if (task.Id == Id)
+            throw new DomainException("Завдання не може бути підзадачею самого себе.");
         _subtasks.Add(task);
     }
 
