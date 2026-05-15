@@ -305,3 +305,105 @@ classDiagram
     DomainException <|-- InvalidStatusTransitionException
     DomainException <|-- UserAlreadyAssignedException
 ```
+# KanbanTracker
+
+Консольний застосунок для управління завданнями (Канбан-дошка). Написаний на C# (.NET 9) в рамках практики з ООП.
+
+## Що це таке
+
+Програма дозволяє створювати дошку з колонками (Todo, In Progress, Review, Done), додавати завдання, призначати виконавців і переміщати завдання між колонками. Все через консоль.
+
+## Як запустити
+
+Потрібно мати встановлений .NET 9.
+
+```bash
+git clone https://github.com/dtape1/KanbanTracker.git
+cd KanbanTracker
+dotnet run --project src/KanbanTracker.App
+```
+
+Запуск тестів:
+```bash
+dotnet test
+```
+
+## Структура проєкту
+
+```
+src/
+  KanbanTracker.Domain/     - всі класи і логіка
+    Base/                   - BaseEntity
+    Enums/                  - KanbanStatus, Priority
+    Exceptions/             - власні винятки
+    Extensions/             - методи розширення
+    Interfaces/             - IAssignable, IFilterable
+    Models/                 - User, TaskItem, BugReport, Column, Epic, Board
+    Patterns/
+      State/                - патерн State (статуси завдань)
+      Factory/              - патерн Factory (створення завдань)
+      Composite/            - патерн Composite (дерево завдань)
+      Decorator/            - патерн Decorator (розширення завдань)
+    Repositories/           - Repository<T>
+    Services/               - TaskService, BoardService
+  KanbanTracker.App/        - Program.cs (точка входу)
+tests/
+  KanbanTracker.Tests/      - 16 юніт-тестів (xUnit)
+```
+
+## Що реалізовано
+
+- Класи з інкапсуляцією, наслідуванням і поліморфізмом
+- Абстрактний клас BaseEntity з методом GetSummary()
+- Два інтерфейси: IAssignable і IFilterable
+- Перевантаження операторів == і != у класі User
+- Generic клас Repository<T>
+- LINQ запити (Where, OrderBy, GroupBy, Any, Count)
+- Делегати і події (OnStatusChanged)
+- Extension Methods (FilterByPriority, Unassigned, AssignedTo і т.д.)
+- Патерни: State, Factory, Composite, Decorator
+- Custom Exceptions: DomainException, UserAlreadyAssignedException і т.д.
+- Серіалізація дошки у JSON через System.Text.Json
+- 16 юніт-тестів через xUnit
+
+## Патерни
+
+**State** - кожен статус завдання це окремий клас (TodoState, InProgressState, ReviewState, DoneState). TaskStateManager вирішує який стан зараз і робить перехід.
+
+**Factory** - є два типи фабрик: RegularTaskFactory створює звичайні завдання, BugReportFactory створює баг-репорти.
+
+**Composite** - завдання можна організувати в дерево: Епік -> Фіча -> Завдання. Всі елементи реалізують інтерфейс ITaskComponent.
+
+**Decorator** - UrgentTaskDecorator додає дедлайн до завдання, TaggedTaskDecorator додає теги. Не змінює оригінальний клас.
+
+## Приклад роботи
+
+```
+=== Custom Exceptions ===
+Помилка: Користувач 'Давид' вже призначений на це завдання.
+Помилка: Назва завдання не може бути порожньою.
+
+=== Extension Methods ===
+Завдання з High пріоритетом:
+  • Завдання: Зробити UML-діаграму | High | Todo | Виконавець: Давид
+
+=== Перевантаження операторів ===
+davyd == davyd2: True
+davyd == anna:   False
+davyd != anna:   True
+
+=== Патерн Decorator ===
+[ТЕРМІНОВО до 16.05.2026] Завдання: Написати класи | Medium | Todo | Виконавець: Анна
+Завдання: Написати тести | High | Todo | Виконавець: Давид | Теги: [backend, testing, ci]
+
+=== Серіалізація у JSON ===
+Збережено у файл: board.json
+Завантажено: Мій проєкт
+```
+
+## Технології
+
+- C# 13 / .NET 9
+- xUnit 2.8.2
+- System.Text.Json
+- Git / GitHub
