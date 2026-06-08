@@ -1,5 +1,6 @@
 ﻿using KanbanTracker.Domain.Enums;
 using KanbanTracker.Domain.Models;
+using KanbanTracker.Domain.Exceptions;
 
 namespace KanbanTracker.Tests;
 
@@ -15,7 +16,7 @@ public class TaskItemTests
     [Fact]
     public void TaskItem_TitleCannotBeEmpty()
     {
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<DomainException>(() =>
             new TaskItem("", Priority.Low));
     }
 
@@ -60,7 +61,7 @@ public class TaskItemTests
     public void TaskItem_AddSelfAsSubtask_ThrowsException()
     {
         var task = new TaskItem("Тест", Priority.Medium);
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<DomainException>(() =>
             task.AddSubtask(task));
     }
 

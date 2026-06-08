@@ -1,5 +1,9 @@
 # KanbanTracker
 
+Консольний застосунок для управління завданнями (Канбан-дошка). Написаний на C# (.NET 9) в рамках практики з ООП.
+
+## UML-діаграма класів
+
 ```mermaid
 classDiagram
     direction TB
@@ -258,22 +262,15 @@ classDiagram
         +UserAlreadyAssignedException(userName)
     }
 
-    %% Наслідування від BaseEntity
     BaseEntity <|-- User
     BaseEntity <|-- TaskItem
     BaseEntity <|-- Column
     BaseEntity <|-- Epic
     BaseEntity <|-- Board
-
-    %% Наслідування TaskItem
     TaskItem <|-- BugReport
     TaskItem <|-- TaskDecorator
-
-    %% Декоратори
     TaskDecorator <|-- UrgentTaskDecorator
     TaskDecorator <|-- TaggedTaskDecorator
-
-    %% Інтерфейси
     IAssignable <|.. TaskItem
     IFilterable <|.. TaskItem
     ITaskState <|.. TodoState
@@ -284,8 +281,6 @@ classDiagram
     ITaskFactory <|.. BugReportFactory
     ITaskComponent <|.. TaskLeaf
     ITaskComponent <|.. TaskComposite
-
-    %% Агрегація
     Board "1" o-- "0..*" Column
     Board "1" o-- "0..*" User
     Column "1" o-- "0..*" TaskItem
@@ -293,25 +288,18 @@ classDiagram
     TaskItem "1" o-- "0..*" TaskItem : subtasks
     TaskComposite "1" o-- "0..*" ITaskComponent
     TaskStateManager "1" o-- "4" ITaskState
-
-    %% Асоціації
     TaskItem "0..1" --> "0..1" User : assignee
     TaskLeaf --> TaskItem
     TaskService --> TaskItem
     Repository~T~ --> BaseEntity
-
-    %% Винятки
     DomainException <|-- TaskNotFoundException
     DomainException <|-- InvalidStatusTransitionException
     DomainException <|-- UserAlreadyAssignedException
 ```
-# KanbanTracker
-
-Консольний застосунок для управління завданнями (Канбан-дошка). Написаний на C# (.NET 9) в рамках практики з ООП.
 
 ## Що це таке
 
-Програма дозволяє створювати дошку з колонками (Todo, In Progress, Review, Done), додавати завдання, призначати виконавців і переміщати завдання між колонками. Все через консоль.
+Програма дозволяє створювати дошку з колонками (Todo, In Progress, Review, Done), додавати завдання, призначати виконавців і переміщати завдання між колонками через інтерактивне меню в консолі.
 
 ## Як запустити
 
@@ -332,54 +320,64 @@ dotnet test
 
 ```
 src/
-  KanbanTracker.Domain/     - всі класи і логіка
+  KanbanTracker.Domain/
     Base/                   - BaseEntity
     Enums/                  - KanbanStatus, Priority
-    Exceptions/             - власні винятки
-    Extensions/             - методи розширення
+    Exceptions/             - DomainException і нащадки
+    Extensions/             - TaskExtensions (Extension Methods)
     Interfaces/             - IAssignable, IFilterable
     Models/                 - User, TaskItem, BugReport, Column, Epic, Board
     Patterns/
-      State/                - патерн State (статуси завдань)
-      Factory/              - патерн Factory (створення завдань)
-      Composite/            - патерн Composite (дерево завдань)
-      Decorator/            - патерн Decorator (розширення завдань)
+      State/                - ITaskState, TodoState, InProgressState, ReviewState, DoneState, TaskStateManager
+      Factory/              - ITaskFactory, RegularTaskFactory, BugReportFactory
+      Composite/            - ITaskComponent, TaskLeaf, TaskComposite
+      Decorator/            - TaskDecorator, UrgentTaskDecorator, TaggedTaskDecorator
     Repositories/           - Repository<T>
     Services/               - TaskService, BoardService
-  KanbanTracker.App/        - Program.cs (точка входу)
+  KanbanTracker.App/        - Program.cs (меню)
 tests/
   KanbanTracker.Tests/      - 16 юніт-тестів (xUnit)
 ```
 
+## Приклади роботи
+
+### Головне меню
+![Меню](media/menu.png)
+
+### Перегляд дошки
+![Дошка](media/board.png)
+
+### Переміщення завдання
+![Переміщення](media/move.png)
+
+### Результати тестів
+![Тести](media/tests.png)
+
 ## Що реалізовано
 
 - Класи з інкапсуляцією, наслідуванням і поліморфізмом
-- Абстрактний клас BaseEntity з методом GetSummary()
-- Два інтерфейси: IAssignable і IFilterable
+- Абстрактний клас BaseEntity з GetSummary()
+- Інтерфейси IAssignable і IFilterable
 - Перевантаження операторів == і != у класі User
 - Generic клас Repository<T>
 - LINQ запити (Where, OrderBy, GroupBy, Any, Count)
 - Делегати і події (OnStatusChanged)
 - Extension Methods (FilterByPriority, Unassigned, AssignedTo і т.д.)
 - Патерни: State, Factory, Composite, Decorator
-- Custom Exceptions: DomainException, UserAlreadyAssignedException і т.д.
-- Серіалізація дошки у JSON через System.Text.Json
-- 16 юніт-тестів через xUnit
+- Custom Exceptions: DomainException і нащадки
+- Серіалізація у JSON через System.Text.Json
+- Інтерактивне консольне меню
+- 16 юніт-тестів (xUnit)
 
 ## Патерни
 
-**State** - кожен статус завдання це окремий клас (TodoState, InProgressState, ReviewState, DoneState). TaskStateManager вирішує який стан зараз і робить перехід.
+**State** — кожен статус завдання це окремий клас. TaskStateManager керує переходами між ними.
 
-**Factory** - є два типи фабрик: RegularTaskFactory створює звичайні завдання, BugReportFactory створює баг-репорти.
+**Factory** — RegularTaskFactory створює звичайні завдання, BugReportFactory створює баг-репорти.
 
-**Composite** - завдання можна організувати в дерево: Епік -> Фіча -> Завдання. Всі елементи реалізують інтерфейс ITaskComponent.
+**Composite** — дерево: Епік → Фіча → Завдання. Всі елементи реалізують ITaskComponent.
 
-**Decorator** - UrgentTaskDecorator додає дедлайн до завдання, TaggedTaskDecorator додає теги. Не змінює оригінальний клас.
-
-## Приклад роботи
-
-![output](media/media.png)
-
+**Decorator** — UrgentTaskDecorator додає дедлайн, TaggedTaskDecorator додає теги. Не змінює оригінальний клас.
 
 ## Технології
 
@@ -387,3 +385,13 @@ tests/
 - xUnit 2.8.2
 - System.Text.Json
 - Git / GitHub
+
+## CHANGELOG
+
+### v1.0.0 — 15.05.2026
+- Реалізовано всі класи предметної області
+- Додано патерни State, Factory, Composite, Decorator
+- Generic Repository<T>, LINQ, делегати, Extension Methods
+- Custom Exceptions, серіалізація JSON
+- Інтерактивне консольне меню
+- 16 юніт-тестів (xUnit)
